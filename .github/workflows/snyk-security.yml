@@ -1,0 +1,63 @@
+name: Snyk Security Scan
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    # Run every Monday at 7 AM UTC
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  snyk-scan:
+    name: Snyk Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Node projects)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Python (for Python projects)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f pom.xml ]; then
+            mvn install -DskipTests
+          fi
+        continue-on-error: true
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=low
+
+      - name: Run Snyk Code (SAST)
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
