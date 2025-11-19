@@ -1,6 +1,8 @@
 # Security Scan Template
 
-This template provides comprehensive automated security scanning for open source software validation, compliant with DoD cybersecurity requirements.
+**Version:** 1.0  
+**Last Updated:** 2025-11-19  
+**Purpose:** Automated security scanning for open source software validation
 
 ## 🔐 Security Scanning Features
 
@@ -10,165 +12,297 @@ This template provides comprehensive automated security scanning for open source
 - **Secret Scanning**: Detects hardcoded credentials (requires enabling in Settings)
 - **Dependabot**: Automated dependency updates
 
-## 📋 DoD Compliance Support
+---
 
-Configured to support:
-- DISA Application Security and Development STIG
-- DoDI 8500.01 (Cybersecurity)
-- DoDI 8510.01 (Risk Management Framework)
-- NIST SP 800-53 controls
+## Purpose Statement
 
-## 🚀 Quick Start
+This template provides DoD-compliant automated security scanning infrastructure for open source software (OSS) validation. It implements defense-in-depth security analysis using multiple industry-standard tools to detect vulnerabilities, insecure dependencies, and code quality issues.
 
-### 1. Use This Template
+---
 
-1. Click **"Use this template"** button above
-2. Name your repository (e.g., `scan-project-name`)
-3. Choose **Public** visibility
-4. Click **"Create repository"**
+## Compliance Framework
 
-### 2. Add Snyk Token
+### Applicable Standards
 
-1. Get your Snyk API token from [snyk.io](https://app.snyk.io/account)
-2. In your new repository: **Settings** → **Secrets and variables** → **Actions**
-3. Click **"New repository secret"**
-4. Name: `SNYK_TOKEN`
-5. Value: (paste your token)
-6. Click **"Add secret"**
+| Standard | Version | Requirement |
+|----------|---------|-------------|
+| DISA Application Security and Development STIG | V5R3 | APSC-DV-002560, APSC-DV-003235 |
+| DoDI 8500.01 | 14 Mar 2014 | Cybersecurity |
+| DoDI 8510.01 | 12 Mar 2014 | Risk Management Framework |
+| NIST SP 800-53 | Rev 5 | RA-5, SI-2, SA-15 |
+| NIST SP 800-218 | Feb 2022 | Secure Software Development Framework |
 
-### 3. Import Project Code
+### Control Implementation
 
-Choose one of these methods:
+| Control ID | Control Name | Implementation |
+|------------|--------------|----------------|
+| APSC-DV-002560 | Static Analysis | CodeQL SAST scanning |
+| APSC-DV-003235 | Dependency Scanning | Snyk SCA + Dependabot |
+| RA-5 | Vulnerability Scanning | Automated weekly scans |
+| SI-2 | Flaw Remediation | Automated alerts and PRs |
+| SA-15 | Development Process | Integrated CI/CD scanning |
 
-**Option A: Fork existing repository**
-```bash
-# Fork the target repository first on GitHub
-# Then add it as a remote
-git clone https://github.com/YOUR_USERNAME/YOUR_NEW_REPO.git
-cd YOUR_NEW_REPO
-git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPO.git
-git pull upstream main
-git push origin main
-```
+---
 
-**Option B: Import code manually**
-1. Clone the open source project locally
-2. Copy files to your new repository
-3. Commit and push
+## Quick Start
 
-**Option C: Use GitHub's import feature**
-1. Go to your new repository
-2. Click **"Import code"** (if available)
-3. Enter the URL of the repository to scan
+### For Security Assessors
 
-### 4. Enable Security Features
+**Time Required:** 5 minutes per project
 
-1. Go to **Settings** → **Code security and analysis**
-2. Enable all features:
-   - ✅ Dependency graph
-   - ✅ Dependabot alerts
-   - ✅ Dependabot security updates
-   - ✅ Secret scanning
-   - ✅ Code scanning (should auto-enable)
+1. **Use this template** → Click green "Use this template" button
+2. **Name repository** → Format: `scan-[project-name]`
+3. **Navigate to Actions** → Click "Setup Security Scanning"
+4. **Run workflow** → Click "Run workflow" dropdown → Click "Run workflow"
+5. **Follow instructions** → Complete steps in automatically created issue
+6. **Review findings** → Security tab → Code scanning
 
-### 5. Customize Workflow (Optional)
+### For Program Managers
 
-Edit `.github/workflows/codeql-analysis.yml`:
-- Remove languages not used in your project from the matrix
-- Adjust schedule if needed
+This template enables rapid, consistent security assessment of OSS projects without requiring specialized security expertise. All scans execute automatically and results aggregate in a central dashboard.
 
-### 6. Run Scans
+---
 
-**Automatic triggers:**
-- Every push to main/master/develop
-- Every pull request
-- Weekly schedule (Mondays)
+## Security Scanning Tools
 
-**Manual trigger:**
-1. Go to **Actions** tab
-2. Select a workflow
-3. Click **"Run workflow"**
+### Primary Scanners
 
-## 📊 View Results
+| Tool | Type | Coverage | DoD Approved |
+|------|------|----------|--------------|
+| **CodeQL** | SAST | Code vulnerabilities | Yes |
+| **Snyk** | SCA + SAST | Dependencies + code | Yes |
+| **Dependabot** | Dependency Management | Vulnerable packages | Yes |
+| **Secret Scanning** | Credential Detection | Hardcoded secrets | Yes |
 
-### Code Scanning Alerts
-1. **Security** tab → **Code scanning**
-2. Review alerts by severity
-3. Click on alert for details and remediation
+### Supported Languages
 
-### Dependabot Alerts
-1. **Security** tab → **Dependabot**
-2. Review vulnerable dependencies
-3. Create pull requests to update
-
-### Snyk Dashboard
-1. Visit [app.snyk.io](https://app.snyk.io/)
-2. View all monitored projects
-3. Get detailed reports and fix recommendations
-
-## 🔄 Routine Scanning Process
-
-For multiple projects:
-
-1. Use this template for each project
-2. Projects automatically scan on schedule
-3. Review **Security** tab weekly
-4. Check Snyk dashboard for centralized view
-5. Document findings in your compliance reports
-
-## 📝 Generating Reports
-
-Scan results are available in multiple formats:
-- GitHub Security tab (web interface)
-- SARIF files (downloadable from Actions artifacts)
-- Snyk dashboard (PDF/CSV export available)
-
-## 🛠️ Supported Languages
-
-- JavaScript/TypeScript
+- JavaScript / TypeScript (Node.js)
 - Python
-- Java
+- Java / Kotlin
+- C / C++
+- C# / .NET
 - Go
-- C/C++
-- C#
 - Ruby
 
-## 📚 Additional Resources
+---
 
-- [GitHub Code Scanning Documentation](https://docs.github.com/en/code-security/code-scanning)
-- [Snyk Documentation](https://docs.snyk.io/)
-- [DISA STIG Requirements](https://public.cyber.mil/stigs/)
+## Installation Methods
 
+### Method 1: Automated Setup (Recommended)
 
-## 🚀 Quick Start (Web Browser Only - No Terminal Needed!)
+1. Click "Use this template" button
+2. Create repository (name format: `scan-[project]`)
+3. Go to Actions tab
+4. Run "Setup Security Scanning" workflow
+5. Follow created issue instructions
 
-### Method 1: Automatic Setup (Recommended)
+### Method 2: GitHub Default Setup
 
-1. **Use this template** → Click "Use this template" button above → Create your repository
-2. **Go to Actions tab** → Click "Setup Security Scanning"
-3. **Click "Run workflow"** dropdown → Click green "Run workflow" button
-4. **Wait 30 seconds** → A new issue will be created with setup instructions
-5. **Follow the issue instructions** → Add your Snyk token
-6. **Done!** Security scanning is now active 🎉
-
-### Method 2: Manual Setup
-
-If you prefer to add workflows manually:
-
-1. Fork/create your repository
-2. Click "Add file" → "Create new file"
-3. Name: `.github/workflows/codeql-analysis.yml`
-4. Copy content from [this file](https://github.com/hbonesctr/security-scan-template/blob/main/.github/workflows/codeql-analysis.yml)
-5. Commit the file
-6. Repeat for Snyk workflow if desired
+1. Fork/create repository with code
+2. Navigate to Settings → Code security and analysis
+3. Click "Set up" under Code scanning
+4. Select "Default" configuration
+5. Click "Enable CodeQL"
 
 ---
 
-## 🤝 Support
+## Scan Execution Schedule
 
-For issues or questions about this template, open an issue in this repository.
+| Scan Type | Trigger | Frequency |
+|-----------|---------|-----------|
+| SAST (CodeQL) | Push, PR, Schedule | Every Monday 06:00 UTC |
+| SCA (Snyk) | Push, PR, Schedule | Every Monday 07:00 UTC |
+| Dependency (Dependabot) | Automatic | Daily check, weekly updates |
+| Secret Scanning | Push | Immediate |
 
 ---
 
-**Last Updated:** 2025-11-19
-**Version:** 1.0
+## Results and Reporting
+
+### Viewing Findings
+
+**Code Scanning Alerts:**
+- Location: Security → Code scanning
+- Content: Vulnerability findings with severity ratings
+- Format: Interactive list with remediation guidance
+
+**Dependency Alerts:**
+- Location: Security → Dependabot  
+- Content: Vulnerable dependencies with upgrade recommendations
+- Format: Automated pull requests for fixes
+
+**Snyk Dashboard:**
+- Location: https://app.snyk.io/
+- Content: Centralized view across all projects
+- Format: Executive dashboard with trend analysis
+
+### Severity Ratings
+
+Findings are classified using CVSS v3.1:
+
+| Severity | CVSS Score | Response Time |
+|----------|------------|---------------|
+| Critical | 9.0 - 10.0 | Immediate |
+| High | 7.0 - 8.9 | 7 days |
+| Medium | 4.0 - 6.9 | 30 days |
+| Low | 0.1 - 3.9 | 90 days |
+
+---
+
+## Operational Procedures
+
+### Weekly Review Process
+
+**Time Required:** 15-30 minutes
+
+1. **Review Snyk Dashboard** (Monday morning)
+   - Check for new critical/high vulnerabilities
+   - Note trending issues across projects
+
+2. **Examine GitHub Security Tab**
+   - Review new code scanning alerts
+   - Verify Dependabot PR status
+
+3. **Update Tracking Documentation**
+   - Log new findings in assessment tracker
+   - Update remediation status
+
+4. **Generate Weekly Report** (if required)
+   - Export findings to CSV
+   - Compile executive summary
+
+### Incident Response
+
+**For Critical Vulnerabilities:**
+
+1. **Immediate notification** to project stakeholders
+2. **Risk assessment** within 24 hours
+3. **Remediation plan** within 48 hours
+4. **Implementation tracking** until closure
+5. **Verification scan** after remediation
+
+---
+
+## Documentation Templates
+
+### Assessment Report Template
+```markdown
+# Security Assessment Report
+
+**Project:** [Name]
+**Version:** [Version]
+**Assessment Date:** [Date]
+**Assessor:** [Name]
+
+## Executive Summary
+[Brief overview of security posture]
+
+## Methodology
+- SAST: CodeQL v[version]
+- SCA: Snyk v[version]
+- Standards: DISA STIG, NIST SP 800-53
+
+## Findings Summary
+| Severity | Count |
+|----------|-------|
+| Critical | [#] |
+| High | [#] |
+| Medium | [#] |
+| Low | [#] |
+
+## Risk Assessment
+[Overall risk rating and justification]
+
+## Recommendations
+[Prioritized remediation recommendations]
+
+## Compliance Status
+[Map findings to STIG/NIST requirements]
+```
+
+### SBOM Generation
+
+**Using GitHub:**
+```bash
+# Install GitHub CLI
+gh api repos/OWNER/REPO/dependency-graph/sbom --jq .sbom > sbom-spdx.json
+```
+
+**Format:** SPDX 2.3 (DoD standard)
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue:** Workflow fails with "SNYK_TOKEN not found"
+- **Solution:** Add SNYK_TOKEN to repository secrets (Settings → Secrets → Actions)
+
+**Issue:** CodeQL finds no code to analyze
+- **Solution:** Ensure source code files exist in repository (not just documentation)
+
+**Issue:** Scans fail due to runner timeout
+- **Solution:** Increase timeout in workflow file or contact GitHub support
+
+**Issue:** False positives in results
+- **Solution:** Review finding, add suppression with justification if appropriate
+
+---
+
+## Security Considerations
+
+### Data Classification
+
+- **Scan Results:** CUI (Controlled Unclassified Information)
+- **Source Code:** Varies by project
+- **Credentials:** Never commit to repository
+
+### Access Control
+
+- Repository access: Need-to-know basis
+- API tokens: Stored as encrypted secrets
+- Results: Available only to authorized personnel
+
+### Audit Trail
+
+All security scanning activities are logged:
+- Workflow executions: GitHub Actions logs (90 days)
+- Scan results: Permanent until manually deleted
+- Configuration changes: Git commit history
+
+---
+
+## Support and Contacts
+
+### Technical Support
+
+- **GitHub Issues:** For template bugs and enhancements
+- **GitHub Discussions:** For usage questions
+- **Snyk Support:** For Snyk-specific issues
+
+### Security Contacts
+
+- **Vulnerability Reports:** [Your security contact email]
+- **Incident Response:** [Your IR team contact]
+
+---
+
+## References
+
+### Official Documentation
+
+1. [GitHub Code Scanning Documentation](https://docs.github.com/en/code-security/code-scanning)
+2. [CodeQL Documentation](https://codeql.github.com/docs/)
+3. [Snyk Documentation](https://docs.snyk.io/)
+4. [DISA STIGs](https://public.cyber.mil/stigs/)
+5. [NIST SP 800-53 Rev 5](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
+6. [NIST SP 800-218 SSDF](https://csrc.nist.gov/publications/detail/sp/800-218/final)
+
+### Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-11-19 | Initial release |
+
+---
