@@ -139,6 +139,31 @@ Scan results are available in multiple formats:
 - [Snyk Documentation](https://docs.snyk.io/)
 - [DISA STIG Requirements](https://public.cyber.mil/stigs/)
 
+
+## 🚀 Quick Start (Web Browser Only - No Terminal Needed!)
+
+### Method 1: Automatic Setup (Recommended)
+
+1. **Use this template** → Click "Use this template" button above → Create your repository
+2. **Go to Actions tab** → Click "Setup Security Scanning"
+3. **Click "Run workflow"** dropdown → Click green "Run workflow" button
+4. **Wait 30 seconds** → A new issue will be created with setup instructions
+5. **Follow the issue instructions** → Add your Snyk token
+6. **Done!** Security scanning is now active 🎉
+
+### Method 2: Manual Setup
+
+If you prefer to add workflows manually:
+
+1. Fork/create your repository
+2. Click "Add file" → "Create new file"
+3. Name: `.github/workflows/codeql-analysis.yml`
+4. Copy content from [this file](https://github.com/hbonesctr/security-scan-template/blob/main/.github/workflows/codeql-analysis.yml)
+5. Commit the file
+6. Repeat for Snyk workflow if desired
+
+---
+
 ## 🤝 Support
 
 For issues or questions about this template, open an issue in this repository.
