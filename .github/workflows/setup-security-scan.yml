@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5  # Updated to v5
       
       - name: Create workflows directory
         run: mkdir -p .github/workflows
@@ -34,36 +34,50 @@ jobs:
             pull_request:
               branches: [ main, master ]
             schedule:
-              - cron: '0 6 * * 1'
+              - cron: '0 6 * * 1'  # Weekly Monday 6 AM UTC
+            workflow_dispatch:  # Manual trigger
+          
+          permissions:
+            actions: read
+            contents: read
+            security-events: write
           
           jobs:
             analyze:
-              name: Analyze
+              name: Analyze (${{ matrix.language }})
               runs-on: ubuntu-latest
+              timeout-minutes: 360
+              
               permissions:
+                security-events: write
+                packages: read
                 actions: read
                 contents: read
-                security-events: write
               
               strategy:
                 fail-fast: false
                 matrix:
-                  language: [ 'javascript', 'python' ]
+                  include:
+                    - language: javascript-typescript
+                      build-mode: none
+                    - language: python
+                      build-mode: none
               
               steps:
               - name: Checkout repository
-                uses: actions/checkout@v4
+                uses: actions/checkout@v5  # Updated to v5
               
               - name: Initialize CodeQL
-                uses: github/codeql-action/init@v3
+                uses: github/codeql-action/init@v4  # Updated to v4
                 with:
                   languages: ${{ matrix.language }}
-              
-              - name: Autobuild
-                uses: github/codeql-action/autobuild@v3
+                  build-mode: ${{ matrix.build-mode }}
+                  queries: security-extended
               
               - name: Perform CodeQL Analysis
-                uses: github/codeql-action/analyze@v3
+                uses: github/codeql-action/analyze@v4  # Updated to v4
+                with:
+                  category: "/language:${{ matrix.language }}"
           EOF
       
       - name: Create Snyk workflow
@@ -78,42 +92,69 @@ jobs:
             pull_request:
               branches: [ main, master ]
             schedule:
-              - cron: '0 7 * * 1'
+              - cron: '0 7 * * 1'  # Weekly Monday 7 AM UTC
+            workflow_dispatch:
+          
+          permissions:
+            contents: read
+            security-events: write
           
           jobs:
             snyk:
               runs-on: ubuntu-latest
               steps:
-                - uses: actions/checkout@v4
+                - name: Checkout code
+                  uses: actions/checkout@v5  # Updated to v5
                 
                 - name: Setup Node.js
-                  uses: actions/setup-node@v4
+                  uses: actions/setup-node@v4  # Updated to v4
                   with:
-                    node-version: '18'
+                    node-version: '20'  # Updated to Node 20 LTS
                 
                 - name: Install dependencies
                   run: |
-                    if [ -f package.json ]; then npm install || true; fi
-                    if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+                    if [ -f package.json ]; then npm ci 2>/dev/null || npm install; fi
+                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
                   continue-on-error: true
                 
-                - name: Run Snyk
-                  run: |
-                    npm install -g snyk
-                    snyk auth ${{ secrets.SNYK_TOKEN }}
-                    snyk test --all-projects || true
-                    snyk code test || true
+                - name: Run Snyk Security Scan
+                  uses: snyk/actions/node@master
                   continue-on-error: true
                   env:
                     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+                  with:
+                    args: --all-projects --severity-threshold=low
+                
+                - name: Upload Snyk results to GitHub Code Scanning
+                  uses: github/codeql-action/upload-sarif@v4  # Updated to v4
+                  if: always()
+                  with:
+                    sarif_file: snyk.sarif
+          EOF
+      
+      - name: Create Dependabot config
+        run: |
+          mkdir -p .github
+          cat > .github/dependabot.yml << 'EOF'
+          version: 2
+          updates:
+            - package-ecosystem: "github-actions"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+            - package-ecosystem: "npm"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+              open-pull-requests-limit: 10
           EOF
       
       - name: Commit workflows
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/
-          git diff --staged --quiet || git commit -m "🔐 Add security scanning workflows"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/
+          git diff --staged --quiet || git commit -m "🔐 Add security scanning workflows and Dependabot config"
           git push
       
       - name: Create setup instructions issue
@@ -124,52 +165,61 @@ jobs:
             
             const body = `## 🎉 Security Scanning Setup Complete!
             
-            ### ✅ Installed:
-            - ✅ **CodeQL Analysis** - Static code analysis
-            ${snykEnabled ? '- ✅ **Snyk Security** - Dependency and code scanning' : '- ⏭️ Snyk (skipped)'}
+            ### ✅ Installed Workflows:
+            - **CodeQL Analysis v4** (Latest) - SAST scanning
+            ${snykEnabled ? '- **Snyk Security** - Dependency and code scanning' : '- ⏭️ Snyk (skipped)'}
+            - **Dependabot** - Automated dependency updates
             
             ### 📋 Next Steps:
             
-            ${snykEnabled ? `#### 1. Add Snyk Token (Required for Snyk)
+            ${snykEnabled ? `#### 1. Add Snyk Token
             
-            a. Get your token from [snyk.io/account](https://app.snyk.io/account)
+            Get your token from [app.snyk.io/account](https://app.snyk.io/account)
             
-            b. Add it to this repository:
-               - Go to [Settings → Secrets → Actions](/${context.repo.owner}/${context.repo.repo}/settings/secrets/actions)
-               - Click **"New repository secret"**
-               - Name: \`SNYK_TOKEN\`
-               - Value: (paste your Snyk API token)
-               - Click **"Add secret"**
+            Then add it:
+            - Go to [Settings → Secrets → Actions](/${context.repo.owner}/${context.repo.repo}/settings/secrets/actions)
+            - Click **"New repository secret"**
+            - Name: \`SNYK_TOKEN\`
+            - Value: (paste token)
+            - Click **"Add secret"**
             ` : ''}
             
-            #### ${snykEnabled ? '2' : '1'}. Enable Security Features
+            #### ${snykEnabled ? '2' : '1'}. Enable GitHub Security Features
             
-            Go to [Settings → Code security and analysis](/${context.repo.owner}/${context.repo.repo}/settings/security_analysis) and enable:
-            - ✅ Dependabot alerts
-            - ✅ Dependabot security updates
-            - ✅ Secret scanning (if available)
+            Go to [Settings → Code security](/${context.repo.owner}/${context.repo.repo}/settings/security_analysis):
+            - ✅ Enable **Dependabot alerts**
+            - ✅ Enable **Dependabot security updates** 
+            - ✅ Enable **Secret scanning** (if available)
+            - ✅ Enable **Push protection for secrets**
             
             #### ${snykEnabled ? '3' : '2'}. Verify Workflows
             
-            - Go to the [Actions tab](/${context.repo.owner}/${context.repo.repo}/actions)
-            - Workflows will run automatically on the next push
-            - Or click **"Run workflow"** to trigger manually
+            - Go to [Actions tab](/${context.repo.owner}/${context.repo.repo}/actions)
+            - Workflows run automatically on next push
+            - Or click **"Run workflow"** to trigger now
             
             ### 📊 View Results
             
-            Once scans complete, view results here:
             - **Code Scanning:** [Security → Code scanning](/${context.repo.owner}/${context.repo.repo}/security/code-scanning)
-            - **Dependencies:** [Security → Dependabot](/${context.repo.owner}/${context.repo.repo}/security/dependabot)
+            - **Dependabot:** [Security → Dependabot](/${context.repo.owner}/${context.repo.repo}/security/dependabot)
             ${snykEnabled ? '- **Snyk Dashboard:** [app.snyk.io](https://app.snyk.io/)' : ''}
+            
+            ### 🔄 What Changed (Nov 2025 Updates):
+            - Using CodeQL v4 (latest, v3 deprecated Dec 2026)
+            - Using actions/checkout@v5
+            - Using actions/setup-node@v4  
+            - Node.js 20 LTS (current long-term support)
+            - Added Dependabot auto-updates
+            - Enhanced permissions for security
             
             ---
             
-            ✅ Close this issue once setup is complete.`;
+            ✅ **Close this issue once setup is complete.**`;
             
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '🔐 Security Scanning Setup - Action Required',
+              title: '🔐 Security Scanning Setup Complete - Next Steps',
               body: body,
-              labels: ['security', 'setup']
+              labels: ['security', 'setup', 'documentation']
             });
