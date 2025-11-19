@@ -1,0 +1,175 @@
+name: Setup Security Scanning
+
+on:
+  workflow_dispatch:
+    inputs:
+      enable_snyk:
+        description: 'Enable Snyk scanning (requires SNYK_TOKEN secret)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create workflows directory
+        run: mkdir -p .github/workflows
+      
+      - name: Create CodeQL workflow
+        run: |
+          cat > .github/workflows/codeql-analysis.yml << 'EOF'
+          name: CodeQL Analysis
+          
+          on:
+            push:
+              branches: [ main, master ]
+            pull_request:
+              branches: [ main, master ]
+            schedule:
+              - cron: '0 6 * * 1'
+          
+          jobs:
+            analyze:
+              name: Analyze
+              runs-on: ubuntu-latest
+              permissions:
+                actions: read
+                contents: read
+                security-events: write
+              
+              strategy:
+                fail-fast: false
+                matrix:
+                  language: [ 'javascript', 'python' ]
+              
+              steps:
+              - name: Checkout repository
+                uses: actions/checkout@v4
+              
+              - name: Initialize CodeQL
+                uses: github/codeql-action/init@v3
+                with:
+                  languages: ${{ matrix.language }}
+              
+              - name: Autobuild
+                uses: github/codeql-action/autobuild@v3
+              
+              - name: Perform CodeQL Analysis
+                uses: github/codeql-action/analyze@v3
+          EOF
+      
+      - name: Create Snyk workflow
+        if: inputs.enable_snyk
+        run: |
+          cat > .github/workflows/snyk-security.yml << 'EOF'
+          name: Snyk Security
+          
+          on:
+            push:
+              branches: [ main, master ]
+            pull_request:
+              branches: [ main, master ]
+            schedule:
+              - cron: '0 7 * * 1'
+          
+          jobs:
+            snyk:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                
+                - name: Setup Node.js
+                  uses: actions/setup-node@v4
+                  with:
+                    node-version: '18'
+                
+                - name: Install dependencies
+                  run: |
+                    if [ -f package.json ]; then npm install || true; fi
+                    if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+                  continue-on-error: true
+                
+                - name: Run Snyk
+                  run: |
+                    npm install -g snyk
+                    snyk auth ${{ secrets.SNYK_TOKEN }}
+                    snyk test --all-projects || true
+                    snyk code test || true
+                  continue-on-error: true
+                  env:
+                    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          EOF
+      
+      - name: Commit workflows
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/
+          git diff --staged --quiet || git commit -m "🔐 Add security scanning workflows"
+          git push
+      
+      - name: Create setup instructions issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const snykEnabled = '${{ inputs.enable_snyk }}' === 'true';
+            
+            const body = `## 🎉 Security Scanning Setup Complete!
+            
+            ### ✅ Installed:
+            - ✅ **CodeQL Analysis** - Static code analysis
+            ${snykEnabled ? '- ✅ **Snyk Security** - Dependency and code scanning' : '- ⏭️ Snyk (skipped)'}
+            
+            ### 📋 Next Steps:
+            
+            ${snykEnabled ? `#### 1. Add Snyk Token (Required for Snyk)
+            
+            a. Get your token from [snyk.io/account](https://app.snyk.io/account)
+            
+            b. Add it to this repository:
+               - Go to [Settings → Secrets → Actions](/${context.repo.owner}/${context.repo.repo}/settings/secrets/actions)
+               - Click **"New repository secret"**
+               - Name: \`SNYK_TOKEN\`
+               - Value: (paste your Snyk API token)
+               - Click **"Add secret"**
+            ` : ''}
+            
+            #### ${snykEnabled ? '2' : '1'}. Enable Security Features
+            
+            Go to [Settings → Code security and analysis](/${context.repo.owner}/${context.repo.repo}/settings/security_analysis) and enable:
+            - ✅ Dependabot alerts
+            - ✅ Dependabot security updates
+            - ✅ Secret scanning (if available)
+            
+            #### ${snykEnabled ? '3' : '2'}. Verify Workflows
+            
+            - Go to the [Actions tab](/${context.repo.owner}/${context.repo.repo}/actions)
+            - Workflows will run automatically on the next push
+            - Or click **"Run workflow"** to trigger manually
+            
+            ### 📊 View Results
+            
+            Once scans complete, view results here:
+            - **Code Scanning:** [Security → Code scanning](/${context.repo.owner}/${context.repo.repo}/security/code-scanning)
+            - **Dependencies:** [Security → Dependabot](/${context.repo.owner}/${context.repo.repo}/security/dependabot)
+            ${snykEnabled ? '- **Snyk Dashboard:** [app.snyk.io](https://app.snyk.io/)' : ''}
+            
+            ---
+            
+            ✅ Close this issue once setup is complete.`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔐 Security Scanning Setup - Action Required',
+              body: body,
+              labels: ['security', 'setup']
+            });
